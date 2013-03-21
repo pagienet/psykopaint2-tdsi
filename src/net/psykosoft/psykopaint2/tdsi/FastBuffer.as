@@ -90,7 +90,7 @@ package net.psykosoft.psykopaint2.tdsi
 		
 		public function addFloatsToVertices( data:Vector.<Number>, offset:int ):void
 		{
-			
+			activateMemory();
 			var i:int =  data.length;
 			offset = __cint( offset + data.length * 4 );
 			while ( i > 0 )
@@ -100,6 +100,46 @@ package net.psykosoft.psykopaint2.tdsi
 				);
 				offset = __cint( offset - 4 );
 				Memory.writeFloat( data[i], offset);
+			}
+		}
+		
+		public function addInterleavedFloatsToVertices( data:Vector.<Number>, offset:int, blockCount:int, skipCount:int ):void
+		{
+			activateMemory();
+			var i:int =  0;
+			var j:int = 0;
+			var l:int = data.length;
+			var s:int = skipCount * 4;
+			//offset = __cint( offset + (data.length / blockCount) * (blockCount + skipCount) * 4 );
+			while ( i < l )
+			{
+				Memory.writeFloat( data[i], offset);
+				offset = __cint( offset + 4 );
+				__asm(
+					IncLocalInt(i),
+					IncLocalInt(j)
+				);
+				if ( j == blockCount )
+				{
+					offset = __cint( offset + s );
+					j = 0;
+				}
+			}
+		}
+		
+		public function addInterleavedFloatByteArrayToVertices( data:ByteArray, offset:int, blockCount:int, skipCount:int ):void
+		{
+			var blockSize:int = blockCount * 4;
+			var skipSize:int = skipCount * 4;
+			
+			var count:int = data.length / blockSize;
+			var dataOffset:int = 0;
+			_buffer.position = offset;
+			for ( var i:int = 0; i < count; i++ )
+			{
+				_buffer.writeBytes( data,dataOffset,blockSize);
+				_buffer.position+=skipSize;
+				dataOffset += blockSize;
 			}
 		}
 		
