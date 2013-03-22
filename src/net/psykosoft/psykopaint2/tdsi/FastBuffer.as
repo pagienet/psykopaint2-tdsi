@@ -15,6 +15,7 @@ package net.psykosoft.psykopaint2.tdsi
 	public class FastBuffer
 	{
 		protected var _buffer:ByteArray;
+		protected var _baseOffset:int;
 		protected var _indexOffset:int;
 		private const MAX_VERTEX_COUNT:int = 65535;
 		private const MAX_INDEX_COUNT:int = 524286;
@@ -26,17 +27,20 @@ package net.psykosoft.psykopaint2.tdsi
 		
 		private function init():void
 		{
-			_indexOffset = MAX_VERTEX_COUNT*8*4;
+			
+			_baseOffset = MemoryManagerTdsi.reserveMemory( MAX_VERTEX_COUNT*8*4 + MAX_INDEX_COUNT * 2);
+			_indexOffset = _baseOffset+ MAX_VERTEX_COUNT*8*4;
+			_buffer = MemoryManagerTdsi.memory;
+			/*
 			_buffer = new ByteArray();
 			_buffer.endian = Endian.LITTLE_ENDIAN;
 			_buffer.length = _indexOffset + MAX_INDEX_COUNT * 2;
-			
+			*/
 			initIndices();
 		}
 		
 		private function initIndices():void
 		{
-			activateMemory();
 			var j : uint = 0;
 			var i : int = 0;
 			var offset:int = _indexOffset;
@@ -85,14 +89,13 @@ package net.psykosoft.psykopaint2.tdsi
 		
 		public function uploadVerticesToBuffer( vertexBuffer:VertexBuffer3D, byteArrayOffset:int, startOffset:int, count:int ):void
 		{
-			vertexBuffer.uploadFromByteArray(_buffer, byteArrayOffset,startOffset, count );
+			vertexBuffer.uploadFromByteArray(_buffer, _baseOffset + byteArrayOffset,startOffset, count );
 		}
 		
 		public function addFloatsToVertices( data:Vector.<Number>, offset:int ):void
 		{
-			activateMemory();
 			var i:int =  data.length;
-			offset = __cint( offset + data.length * 4 );
+			offset = __cint( _baseOffset +offset + data.length * 4 );
 			while ( i > 0 )
 			{
 				__asm(
@@ -105,12 +108,12 @@ package net.psykosoft.psykopaint2.tdsi
 		
 		public function addInterleavedFloatsToVertices( data:Vector.<Number>, offset:int, blockCount:int, skipCount:int ):void
 		{
-			activateMemory();
 			var i:int =  0;
 			var j:int = 0;
 			var l:int = data.length;
 			var s:int = skipCount * 4;
 			//offset = __cint( offset + (data.length / blockCount) * (blockCount + skipCount) * 4 );
+			offset += _baseOffset;
 			while ( i < l )
 			{
 				Memory.writeFloat( data[i], offset);
@@ -134,18 +137,13 @@ package net.psykosoft.psykopaint2.tdsi
 			
 			var count:int = data.length / blockSize;
 			var dataOffset:int = 0;
-			_buffer.position = offset;
+			_buffer.position = _baseOffset + offset;
 			for ( var i:int = 0; i < count; i++ )
 			{
 				_buffer.writeBytes( data,dataOffset,blockSize);
 				_buffer.position+=skipSize;
 				dataOffset += blockSize;
 			}
-		}
-		
-		public function activateMemory():void
-		{
-			Memory.select(_buffer);
 		}
 		
 	}
