@@ -36,85 +36,8 @@ package net.psykosoft.psykopaint2.tdsi
 
 		public function dispose() : void
 		{
-			//if ( _data ) _data.length = 0;
+			//TODO - allow memory manager to release memory
 		}
-		/*
-		public function setSource( map:BitmapData ):void
-		{
-			width = map.width;
-			height = map.height;
-			
-			var w:int = width;
-			var h:int = height;
-			
-			//var levels:int = 1 + Math.log(Math.min(width,height)) * ilog2;
-			_offsets = new Vector.<int>();
-			var o:int = w*h*4;
-			var levels:int = 0;
-			while ( w > 0 && h > 0 )
-			{
-				_offsets[levels++] = o;
-				w >>= 1;
-				h >>= 1;
-				o += __cint(w*h*4);
-			}
-			
-			_data = new ByteArray();
-			_data.endian = Endian.LITTLE_ENDIAN;
-			
-			_data.length =  width * height * 8;
-			
-			activateMemory();
-			
-			_data.position = 0;
-			_data.writeBytes( map.getPixels(map.rect) );
-			var mask1:int = 0xff00ff;
-			var mask2:int = 0x00ff00;
-			
-			w = width;
-			h = height;
-			var ww:int = w;
-			var hh:int = h;
-			var i:int = 0;
-			var j:int = width * height * 4;
-			while ( levels > 0 )
-			{
-				var v1:int = Memory.readInt(i) >>> 8;
-				var v2:int = Memory.readInt(__cint(i+1)) >>> 8;
-				v1 = ((( v1 & mask1) + ( v2 & mask1 )) >> 1) | ((( v1 & mask2) + ( v2 & mask2 )) >> 1)
-				v2 = Memory.readInt(__cint(i+w)) >>> 8;
-				var v3:int = Memory.readInt(__cint(i+1+w)) >>> 8;
-				v2 = ((( v2 & mask1) + ( v3 & mask1 )) >> 1) | ((( v2 & mask2) + ( v3 & mask2 )) >> 1)
-				v1 = ((( v1 & mask1) + ( v2 & mask1 )) >> 1) | ((( v1 & mask2) + ( v2 & mask2 )) >> 1)
-				Memory.writeInt( v1, j );		
-				__asm( 
-					IncLocalInt(i),
-					IncLocalInt(i),
-					IncLocalInt(j),
-					DecLocalInt(ww)
-					);
-				if ( ww == 0 ) 
-				{
-					i = __cint( i+w);
-					__asm( 
-						DecLocalInt(hh)
-					);	
-					if ( hh == 0 )
-					{
-						w >>= 1;
-						h >>= 1;
-						hh = h;
-						__asm( 
-							DecLocalInt(levels)
-						);	
-					}
-					ww = w;
-				}
-			}
-			
-			
-		}
-		*/
 		
 		public function setSource( map:BitmapData ):void
 		{
@@ -146,21 +69,24 @@ package net.psykosoft.psykopaint2.tdsi
 			
 			for ( var i:int = 0; i < 6; i++ )
 			{
+				offset += rect.width * rect.height * 4; 
 				rect.width >>= 1;
 				rect.height >>= 1;
 				if ( rect.width == 0 || rect.height == 0 ) break;
-				rect.x += width * (f *= 0.5);
+				rect.x += int(width * (f *= 0.5));
 				r.push(rect.clone());
-				offset += rect.width * rect.height * 4; 
+				
 				_offsets.push(offset);
-			
+				
+				offset += rect.width * rect.height * 4; 
 				rect.width  >>= 1;
 				rect.height >>= 1;
 				if ( rect.width == 0 || rect.height == 0 ) break;
-				rect.y += height * (f *= 0.5);
+				rect.y += int(height * (f *= 0.5));
 				r.push(rect.clone());
-				offset += rect.width * rect.height * 4; 
+				
 				_offsets.push(offset);
+				
 				
 			}
 			
@@ -172,7 +98,9 @@ package net.psykosoft.psykopaint2.tdsi
 			for ( i = 0; i < r.length; i++ )
 			{
 				_offsets[i] += _baseOffset;
-				_data.writeBytes( _scaled.getPixels(r[i]) );
+				var ba:ByteArray = _scaled.getPixels(r[i]);
+				ba.position = 0;
+				_data.writeBytes( ba );
 			}
 			_scaled.dispose();
 			
@@ -191,7 +119,7 @@ package net.psykosoft.psykopaint2.tdsi
 			else if ( yy >= height ) yy =__cint(height - 1);
 			
 			var offset:int = _baseOffset + ((xx + yy * width) << 2 );
-			if (true || radius <= 1 )
+			if (radius <= 1 )
 			{
 				var c:uint = Memory.readInt(offset);
 				target[slotOffset] += ((( c >>> 8 ) & 0xff) * i255 - target[slotOffset] ) * colorBlendFactor;
@@ -200,7 +128,6 @@ package net.psykosoft.psykopaint2.tdsi
 				target[__cint(slotOffset+3)] = 1;
 				return;
 			}
-			//TODO: this part is temporary disabled until i found the bug
 			
 			var index:int = -1;
 			var stride:int = width;
