@@ -117,7 +117,7 @@ package net.psykosoft.psykopaint2.tdsi
 			else if ( xx >= width ) xx = __cint(width - 1);
 			if ( yy < 0 )yy = 0;
 			else if ( yy >= height ) yy =__cint(height - 1);
-			
+			radius *= 0.5;
 			var offset:int = _baseOffset + ((xx + yy * width) << 2 );
 			if (radius <= 1 )
 			{
@@ -151,11 +151,11 @@ package net.psykosoft.psykopaint2.tdsi
 			xx >>= 1;
 			yy >>= 1;
 			stride >>= 1;
+			index++;
 			
-			var v2:uint = Memory.readInt( __cint(_offsets[index+1] + ((xx + yy * stride) << 2)));
+			var v2:uint = Memory.readInt( __cint(_offsets[index] + ((xx + yy * stride) << 2)));
 			
-			//var f:Number = 2 - Math.pow(2, radius / Math.pow(2,index) - 1 );
-			var f:Number = 0.5 * ( 4 - Math.pow(2,radius * Math.pow(2,-index)) );
+			var f:Number = 2 - Math.pow(2, radius / Math.pow(2,index) - 1 );
 			
 			var r1:Number = ((v1 >>> 8) & 0xff);
 			var g1:Number = ((v1 >>> 16) & 0xff);
