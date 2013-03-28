@@ -1,5 +1,7 @@
 package net.psykosoft.psykopaint2.tdsi
 {
+	import flash.display3D.textures.Texture;
+	
 	import flash.display.BitmapData;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
@@ -171,5 +173,10 @@ package net.psykosoft.psykopaint2.tdsi
 			target[__cint(slotOffset+3)] = 1;
 		}
 		
+		public function uploadMipLevel( targetTexture:Texture, mipLevel:int ):void 
+		{
+			var offset:int = _baseOffset + ( mipLevel > 0 ? _offsets[mipLevel-1] : 0 ); 
+			targetTexture.uploadFromByteArray(_data,offset,mipLevel);
+		}
 	}
 }
