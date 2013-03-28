@@ -1,8 +1,7 @@
 package net.psykosoft.psykopaint2.tdsi
 {
-	import flash.display3D.textures.Texture;
-	
 	import flash.display.BitmapData;
+	import flash.display3D.textures.Texture;
 	import flash.geom.Matrix;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
@@ -104,6 +103,15 @@ package net.psykosoft.psykopaint2.tdsi
 				ba.position = 0;
 				_data.writeBytes( ba );
 			}
+			var j:int = _baseOffset + width * height * 4 + offset - 4;
+			while ( j >= _baseOffset )
+			{
+				var d:int = Memory.readInt(j );
+				Memory.writeInt( ((d >> 24) & 0xff) | ((d >> 8) & 0xff00)  | ((d << 8) & 0xff0000) | ((d  & 0xff) << 24), j );
+				j = __cint(j-4);
+					
+			}
+			
 			_scaled.dispose();
 			
 		}
@@ -124,9 +132,9 @@ package net.psykosoft.psykopaint2.tdsi
 			if (radius <= 1 )
 			{
 				var c:uint = Memory.readInt(offset);
-				target[slotOffset] += ((( c >>> 8 ) & 0xff) * i255 - target[slotOffset] ) * colorBlendFactor;
-				target[__cint(slotOffset+1)] += ((( c >>> 16 ) & 0xff) * i255 - target[__cint(slotOffset+1)] ) * colorBlendFactor;
-				target[__cint(slotOffset+2)] += ((( c >>> 24 ) & 0xff) * i255 - target[__cint(slotOffset+2)] ) * colorBlendFactor;;
+				target[slotOffset] += ((( c >>> 16 ) & 0xff) * i255 - target[slotOffset] ) * colorBlendFactor;
+				target[__cint(slotOffset+1)] += ((( c >>> 8 ) & 0xff) * i255 - target[__cint(slotOffset+1)] ) * colorBlendFactor;
+				target[__cint(slotOffset+2)] += ((c  & 0xff) * i255 - target[__cint(slotOffset+2)] ) * colorBlendFactor;;
 				target[__cint(slotOffset+3)] = 1;
 				return;
 			}
@@ -159,13 +167,13 @@ package net.psykosoft.psykopaint2.tdsi
 			
 			var f:Number = 2 - Math.pow(2, radius / Math.pow(2,index) - 1 );
 			
-			var r1:Number = ((v1 >>> 8) & 0xff);
-			var g1:Number = ((v1 >>> 16) & 0xff);
-			var b1:Number = ((v1 >>> 24) & 0xff);
+			var r1:Number = ((v1 >>> 16) & 0xff);
+			var g1:Number = ((v1 >>> 8) & 0xff);
+			var b1:Number = (v1  & 0xff);
 			
-			var r2:Number = ((v2 >>> 8) & 0xff);
-			var g2:Number = ((v2 >>> 16) & 0xff);
-			var b2:Number = ((v2 >>> 24) & 0xff);
+			var r2:Number = ((v2 >>> 16) & 0xff);
+			var g2:Number = ((v2 >>> 8) & 0xff);
+			var b2:Number = (v2  & 0xff);
 			
 			target[slotOffset]  += ((r2 + ( r1 - r2 ) * f) * i255 - target[slotOffset] ) * colorBlendFactor;
 			target[__cint(slotOffset+1)] += ((g2 + ( g1 - g2 ) * f) * i255 - target[__cint(slotOffset+1)] ) * colorBlendFactor;
