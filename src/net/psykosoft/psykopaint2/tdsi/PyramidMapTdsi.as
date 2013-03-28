@@ -95,14 +95,15 @@ package net.psykosoft.psykopaint2.tdsi
 			_data = MemoryManagerTdsi.memory;
 			
 			_data.position = _baseOffset;
-			_data.writeBytes( map.getPixels(map.rect) );
+			_data.writeBytes(  map.getPixels(map.rect) );
+			
 			for ( i = 0; i < r.length; i++ )
 			{
 				_offsets[i] += _baseOffset;
-				var ba:ByteArray = _scaled.getPixels(r[i]);
-				ba.position = 0;
-				_data.writeBytes( ba );
+				_data.writeBytes( _scaled.getPixels(r[i]) );
 			}
+			
+			
 			var j:int = _baseOffset + width * height * 4 + offset - 4;
 			while ( j >= _baseOffset )
 			{
