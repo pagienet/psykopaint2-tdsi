@@ -163,6 +163,7 @@ package net.psykosoft.psykopaint2.tdsi
 			yy >>= 1;
 			stride >>= 1;
 			index++;
+			if ( index >= _offsets.length ) index = _offsets.length-1;
 			
 			var v2:uint = Memory.readInt( __cint(_offsets[index] + ((xx + yy * stride) << 2)));
 			
