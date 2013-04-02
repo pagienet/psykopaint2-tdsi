@@ -14,6 +14,7 @@ package net.psykosoft.psykopaint2.tdsi
 	{
 		public static const INDEX_MODE_QUADS:int = 0;
 		public static const INDEX_MODE_TRIANGLES:int = 1;
+		public static const INDEX_MODE_TRIANGLESTRIP:int = 2;
 		
 		protected var _buffer:ByteArray;
 		protected var _baseOffset:int;
@@ -108,6 +109,44 @@ package net.psykosoft.psykopaint2.tdsi
 						IncLocalInt(j),
 						IncLocalInt(i)
 					);
+				}
+			} else if ( _indexMode == INDEX_MODE_TRIANGLESTRIP )
+			{
+				while ( i < 87381 )
+				{
+					Memory.writeShort(j,offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset)
+					);
+					Memory.writeShort(__cint(j+1),offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset)
+					);
+					Memory.writeShort(__cint(j+2),offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset)
+					);
+					Memory.writeShort(__cint(j+1),offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset)
+					);
+					Memory.writeShort(__cint(j+3),offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset)
+					);
+					Memory.writeShort(__cint(j+2),offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset),
+						IncLocalInt(i)
+					);
+					j = __cint( j + 2 );
+					
 				}
 			}
 		}
