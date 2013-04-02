@@ -1,11 +1,9 @@
 package net.psykosoft.psykopaint2.tdsi
 {
-//	import flash.display3D.IndexBuffer3D;
 	import flash.display3D.IndexBuffer3D;
 	import flash.display3D.VertexBuffer3D;
 	import flash.utils.ByteArray;
-	import flash.utils.Endian;
-	
+
 	import apparat.asm.DecLocalInt;
 	import apparat.asm.IncLocalInt;
 	import apparat.asm.__asm;
@@ -14,71 +12,103 @@ package net.psykosoft.psykopaint2.tdsi
 
 	public class FastBuffer
 	{
+		public static const INDEX_MODE_QUADS:int = 0;
+		public static const INDEX_MODE_TRIANGLES:int = 1;
+		
 		protected var _buffer:ByteArray;
 		protected var _baseOffset:int;
 		protected var _indexOffset:int;
+		protected var _indexMode:int = -1;
+		
 		private const MAX_VERTEX_COUNT:int = 65535;
 		private const MAX_INDEX_COUNT:int = 524286;
 		
-		public function FastBuffer()
+		public function FastBuffer( indexMode:int = 0)
 		{
-			init();
+			init( indexMode );
 		}
 		
-		private function init():void
+		private function init( indexMode:int = 0):void
 		{
 			
-			_baseOffset = MemoryManagerTdsi.reserveMemory( MAX_VERTEX_COUNT*8*4 + MAX_INDEX_COUNT * 2);
-			_indexOffset = _baseOffset+ MAX_VERTEX_COUNT*8*4;
+			_baseOffset = MemoryManagerTdsi.reserveMemory( MAX_VERTEX_COUNT * 8 * 4 + MAX_INDEX_COUNT * 2);
+			_indexOffset = _baseOffset + MAX_VERTEX_COUNT*8*4;
 			_buffer = MemoryManagerTdsi.memory;
-			/*
-			_buffer = new ByteArray();
-			_buffer.endian = Endian.LITTLE_ENDIAN;
-			_buffer.length = _indexOffset + MAX_INDEX_COUNT * 2;
-			*/
-			initIndices();
+			initIndices(indexMode);
 		}
 		
-		private function initIndices():void
+		private function initIndices( indexMode:int ):void
 		{
+			_indexMode = indexMode;
+			
 			var j : uint = 0;
 			var i : int = 0;
 			var offset:int = _indexOffset;
-			while ( i < 87381 )
+			
+			if ( _indexMode == INDEX_MODE_QUADS )
 			{
-				Memory.writeShort(j,offset);
-				__asm(
-					IncLocalInt(offset),
-					IncLocalInt(offset)
+				while ( i < 87381 )
+				{
+					Memory.writeShort(j,offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset)
+						);
+					Memory.writeShort(__cint(j+1),offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset)
 					);
-				Memory.writeShort(__cint(j+1),offset);
-				__asm(
-					IncLocalInt(offset),
-					IncLocalInt(offset)
-				);
-				Memory.writeShort(__cint(j+2),offset);
-				__asm(
-					IncLocalInt(offset),
-					IncLocalInt(offset)
-				);
-				Memory.writeShort(j,offset);
-				__asm(
-					IncLocalInt(offset),
-					IncLocalInt(offset)
-				);
-				Memory.writeShort(__cint(j+2),offset);
-				__asm(
-					IncLocalInt(offset),
-					IncLocalInt(offset)
-				);
-				Memory.writeShort(__cint(j+3),offset);
-				__asm(
-					IncLocalInt(offset),
-					IncLocalInt(offset),
-					IncLocalInt(i)
-				);
-				j = __cint( j + 4 );
-				
+					Memory.writeShort(__cint(j+2),offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset)
+					);
+					Memory.writeShort(j,offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset)
+					);
+					Memory.writeShort(__cint(j+2),offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset)
+					);
+					Memory.writeShort(__cint(j+3),offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset),
+						IncLocalInt(i)
+					);
+					j = __cint( j + 4 );
+					
+				}
+			} else if ( _indexMode == INDEX_MODE_TRIANGLES )
+			{
+				while ( i < 87381 )
+				{
+					Memory.writeShort(j,offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset),
+						IncLocalInt(j),
+						IncLocalInt(i)
+					);
+					Memory.writeShort(j,offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset),
+						IncLocalInt(j),
+						IncLocalInt(i)
+					);
+					Memory.writeShort(j,offset);
+					__asm(
+						IncLocalInt(offset),
+						IncLocalInt(offset),
+						IncLocalInt(j),
+						IncLocalInt(i)
+					);
+				}
 			}
 		}
 		
@@ -143,6 +173,19 @@ package net.psykosoft.psykopaint2.tdsi
 				_buffer.writeBytes( data,dataOffset,blockSize);
 				_buffer.position+=skipSize;
 				dataOffset += blockSize;
+			}
+		}
+		
+		public function get indexMode():int
+		{
+			return _indexMode;
+		}
+		
+		public function set indexMode( value:int ):void
+		{
+			if ( value != _indexMode )
+			{
+				initIndices( value );
 			}
 		}
 		
