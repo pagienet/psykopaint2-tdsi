@@ -117,7 +117,7 @@ package net.psykosoft.psykopaint2.tdsi
 			
 		}
 		
-		public function getRGB( x:Number, y:Number, radius:Number, target:Vector.<Number>, slotOffset:int, colorBlendFactor:Number ):void
+		public function getRGB( x:Number, y:Number, radius:Number, target:Vector.<Number> ):void
 		{
 			
 			var xx:int = x + 0.5;
@@ -133,11 +133,10 @@ package net.psykosoft.psykopaint2.tdsi
 			if (radius <= 1 )
 			{
 				var c:uint = Memory.readInt(offset);
-				var alpha:Number = target[__cint(slotOffset+3)] == 0 ? 0 : 1 / target[__cint(slotOffset+3)];
-				target[slotOffset] += ((( c >>> 16 ) & 0xff) * i255 - target[slotOffset] * alpha  ) * colorBlendFactor;
-				target[__cint(slotOffset+1)] += ((( c >>> 8 ) & 0xff) * i255 - target[__cint(slotOffset+1)] * alpha) * colorBlendFactor;
-				target[__cint(slotOffset+2)] += ((c  & 0xff) * i255 - target[__cint(slotOffset+2)] * alpha) * colorBlendFactor;;
-				target[__cint(slotOffset+3)] = 1;
+				
+				target[0] = (( c >>> 16 ) & 0xff) * i255;
+				target[1] = (( c >>> 8 ) & 0xff) * i255;
+				target[2] = (c  & 0xff) * i255;
 				return;
 			}
 			
@@ -177,11 +176,11 @@ package net.psykosoft.psykopaint2.tdsi
 			var r2:Number = ((v2 >>> 16) & 0xff);
 			var g2:Number = ((v2 >>> 8) & 0xff);
 			var b2:Number = (v2  & 0xff);
-			alpha = target[__cint(slotOffset+3)] == 0 ? 0 : 1 / target[__cint(slotOffset+3)];
-			target[slotOffset]  += ((r2 + ( r1 - r2 ) * f) * i255 - target[slotOffset] * alpha ) * colorBlendFactor;
-			target[__cint(slotOffset+1)] += ((g2 + ( g1 - g2 ) * f) * i255 - target[__cint(slotOffset+1)] * alpha ) * colorBlendFactor;
-			target[__cint(slotOffset+2)] += ((b2 + ( b1 - b2 ) * f) * i255 - target[__cint(slotOffset+2)] * alpha ) * colorBlendFactor;
-			target[__cint(slotOffset+3)] = 1;
+			
+			target[0] = (r2 + ( r1 - r2 ) * f) * i255;
+			target[1] =  (g2 + ( g1 - g2 ) * f) * i255;
+			target[2] =  (b2 + ( b1 - b2 ) * f) * i255;
+			
 		}
 		
 		public function uploadMipLevel( targetTexture:Texture, mipLevel:int ):void 
