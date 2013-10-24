@@ -3,14 +3,9 @@ package net.psykosoft.psykopaint2.tdsi
 	import flash.display.BitmapData;
 	import flash.display3D.textures.Texture;
 	import flash.geom.Matrix;
-	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.utils.ByteArray;
-	import flash.utils.Endian;
 	
-	import apparat.asm.DecLocalInt;
-	import apparat.asm.IncLocalInt;
-	import apparat.asm.__asm;
 	import apparat.asm.__cint;
 	import apparat.memory.Memory;
 	
@@ -18,16 +13,18 @@ package net.psykosoft.psykopaint2.tdsi
 	public class PyramidMapTdsi
 	{
 		private var _offsets:Vector.<int>;
-		//private var _offsets:Vector.<Matrix>;
+		private var _maxOffsetCount:int;
 		
 		private var _data:ByteArray;
-		private var width:int;
-		private var height:int;
+		private var width:int = -1;
+		private var height:int = -1;
+		private var scaleFactor:Number = 1;
 		
 		private const ilog2:Number = 1 / Math.log(2);
 		private const i255:Number = 1 / 255;
-		private var _baseOffset:int;
-
+		private var _baseOffset:int = -1;
+		
+		private const MAX_DIMENSION:int = 1024;
 		
 		
 		public function PyramidMapTdsi( sourceMap:BitmapData )
@@ -37,13 +34,23 @@ package net.psykosoft.psykopaint2.tdsi
 
 		public function dispose() : void
 		{
-			//TODO - allow memory manager to release memory
+			_offsets.length = 0;
+			_offsets = null;
+			_data = null;
+			
 		}
 		
 		public function setSource( map:BitmapData ):void
 		{
-			width = map.width;
-			height = map.height;
+			if ( width != -1 && ( width != map.width || height != map.height ))
+			{
+				throw( new Error("PyramidMapTdsi: source map size cannot change once it has been set once!!!! Sorry, we were in a hurry and needed the money. Time to fix memory management, buddy."));	
+			}
+			
+			scaleFactor = Math.min( 1, MAX_DIMENSION / map.width, MAX_DIMENSION / map.height );
+			
+			width = map.width * scaleFactor;
+			height = map.height * scaleFactor;
 			
 			var _scaled:BitmapData = new BitmapData(Math.ceil(width * 0.75), Math.ceil(height * 0.5), true, 0 );
 			var m:Matrix = new Matrix(0.5,0,0,0.5);
@@ -64,10 +71,12 @@ package net.psykosoft.psykopaint2.tdsi
 			r.push(rect.clone());
 			
 			_offsets = new Vector.<int>();
-			var offset:int =  width*height*4;
-			_offsets.push( offset);
-			
-			
+			var offset:int = 0;
+			if ( scaleFactor == 1 )
+			{
+				offset +=  width*height*4;
+				_offsets.push( offset);
+			}
 			for ( var i:int = 0; i < 6; i++ )
 			{
 				offset += rect.width * rect.height * 4; 
@@ -87,15 +96,15 @@ package net.psykosoft.psykopaint2.tdsi
 				r.push(rect.clone());
 				
 				_offsets.push(offset);
-				
-				
 			}
 			
-			_baseOffset = MemoryManagerTdsi.reserveMemory( width * height * 4 + offset);
+			if ( _baseOffset == -1 )
+				_baseOffset = MemoryManagerTdsi.reserveMemory( offset);
+			
 			_data = MemoryManagerTdsi.memory;
 			
 			_data.position = _baseOffset;
-			_data.writeBytes(  map.getPixels(map.rect) );
+			if ( scaleFactor == 1 ) _data.writeBytes(  map.getPixels(map.rect) );
 			
 			for ( i = 0; i < r.length; i++ )
 			{
@@ -103,15 +112,16 @@ package net.psykosoft.psykopaint2.tdsi
 				_data.writeBytes( _scaled.getPixels(r[i]) );
 			}
 			
-			
-			var j:int = _baseOffset + width * height * 4 + offset - 4;
+			_maxOffsetCount = _offsets.length - 1;
+			/*
+			var j:int = _baseOffset + offset - 4; 
 			while ( j >= _baseOffset )
 			{
 				var d:int = Memory.readInt(j );
 				Memory.writeInt( ((d >> 24) & 0xff) | ((d >> 8) & 0xff00)  | ((d << 8) & 0xff0000) | ((d  & 0xff) << 24), j );
 				j = __cint(j-4);
-					
 			}
+			*/
 			
 			_scaled.dispose();
 			
@@ -120,30 +130,29 @@ package net.psykosoft.psykopaint2.tdsi
 		public function getRGB( x:Number, y:Number, radius:Number, target:Vector.<Number> ):void
 		{
 			
-			var xx:int = x + 0.5;
-			var yy:int = y +0.5;
+			var xx:int = x * scaleFactor + 0.5;
+			var yy:int = y * scaleFactor + 0.5;
 			
 			
 			if ( xx < 0 ) xx = 0;
 			else if ( xx >= width ) xx = __cint(width - 1);
 			if ( yy < 0 )yy = 0;
 			else if ( yy >= height ) yy =__cint(height - 1);
-			radius *= 0.5;
+			radius *= 0.5 * scaleFactor;
 			var offset:int = _baseOffset + ((xx + yy * width) << 2 );
 			if (radius <= 1 )
 			{
 				var c:uint = Memory.readInt(offset);
-				
-				target[0] = (( c >>> 16 ) & 0xff) * i255;
-				target[1] = (( c >>> 8 ) & 0xff) * i255;
-				target[2] = (c  & 0xff) * i255;
+				target[0] = (( c >>> 8 ) & 0xff) * i255;
+				target[1] = (( c >>> 16 ) & 0xff) * i255;
+				target[2] = (( c >>> 24 ) & 0xff) * i255;
 				return;
 			}
 			
 			var index:int = -1;
 			var stride:int = width;
 			var scaledRadius:int = radius+0.5;
-			while ( scaledRadius > 1 && index < _offsets.length - 1)
+			while ( scaledRadius > 1 && index < _maxOffsetCount)
 			{
 				scaledRadius >>= 1;
 				index++;
@@ -163,23 +172,24 @@ package net.psykosoft.psykopaint2.tdsi
 			yy >>= 1;
 			stride >>= 1;
 			index++;
-			if ( index >= _offsets.length ) index = _offsets.length-1;
+			if ( index >= _maxOffsetCount + 1 ) index = _maxOffsetCount;
 			
 			var v2:uint = Memory.readInt( __cint(_offsets[index] + ((xx + yy * stride) << 2)));
 			
-			var f:Number = 2 - Math.pow(2, radius / Math.pow(2,index) - 1 );
+			//var f:Number = 2 - Math.pow(2, radius / Math.pow(2,index) - 1 );
+			var f:Number = 2 - Math.pow(2, radius / (1<<index) - 1 );
 			
-			var r1:Number = ((v1 >>> 16) & 0xff);
-			var g1:Number = ((v1 >>> 8) & 0xff);
-			var b1:Number = (v1  & 0xff);
+			var r1:Number = ((v1 >>> 8) & 0xff);
+			var g1:Number = ((v1 >>> 16) & 0xff);
+			var b1:Number = ((v1 >>> 24) & 0xff);
 			
-			var r2:Number = ((v2 >>> 16) & 0xff);
-			var g2:Number = ((v2 >>> 8) & 0xff);
-			var b2:Number = (v2  & 0xff);
+			var r2:Number = ((v2 >>> 8) & 0xff);
+			var g2:Number = ((v2 >>> 16) & 0xff);
+			var b2:Number = ((v2 >>> 24) & 0xff);
 			
 			target[0] = (r2 + ( r1 - r2 ) * f) * i255;
-			target[1] =  (g2 + ( g1 - g2 ) * f) * i255;
-			target[2] =  (b2 + ( b1 - b2 ) * f) * i255;
+			target[1] = (g2 + ( g1 - g2 ) * f) * i255;
+			target[2] = (b2 + ( b1 - b2 ) * f) * i255;
 			
 		}
 		

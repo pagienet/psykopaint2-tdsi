@@ -32,8 +32,8 @@ package net.psykosoft.psykopaint2.tdsi
 		private function init( indexMode:int = 0):void
 		{
 			
-			_baseOffset = MemoryManagerTdsi.reserveMemory( MAX_VERTEX_COUNT * 8 * 4 + MAX_INDEX_COUNT * 2);
-			_indexOffset = _baseOffset + MAX_VERTEX_COUNT*8*4;
+			_baseOffset = MemoryManagerTdsi.reserveMemory( MAX_VERTEX_COUNT * 16 * 4 + MAX_INDEX_COUNT * 2);
+			_indexOffset = _baseOffset + MAX_VERTEX_COUNT*16*4;
 			_buffer = MemoryManagerTdsi.memory;
 			initIndices(indexMode);
 		}
@@ -175,11 +175,11 @@ package net.psykosoft.psykopaint2.tdsi
 			}
 		}
 		
-		public function addInterleavedFloatsToVertices( data:Vector.<Number>, offset:int, blockCount:int, skipCount:int ):void
+		public function addInterleavedFloatsToVertices( data:Vector.<Number>, offset:int, blockCount:int, skipCount:int, dataBlocksToWrite:int = -1 ):void
 		{
 			var i:int =  0;
 			var j:int = 0;
-			var l:int = data.length;
+			var l:int = dataBlocksToWrite == -1 ? data.length : dataBlocksToWrite;
 			var s:int = skipCount * 4;
 			//offset = __cint( offset + (data.length / blockCount) * (blockCount + skipCount) * 4 );
 			offset += _baseOffset;
