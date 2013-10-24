@@ -48,9 +48,18 @@ package net.psykosoft.psykopaint2.tdsi
 			}
 			
 			scaleFactor = Math.min( 1, MAX_DIMENSION / map.width, MAX_DIMENSION / map.height );
+			if ( scaleFactor != 1 )
+			{
+				//this solution is not ideal since it requires temporary memory allocation,
+				//but I ran into issues when trying to do the scale down in a "smarter" way. Bonus points for whoever improves it.
+				var tmpMap:BitmapData = new BitmapData( map.width*scaleFactor, map.height*scaleFactor, false, 0);
+				tmpMap.draw( map, new Matrix(scaleFactor,0,0,scaleFactor), null, "normal",null,true )
+				map = tmpMap;
+			}
 			
-			width = map.width * scaleFactor;
-			height = map.height * scaleFactor;
+			
+			width = map.width;
+			height = map.height;
 			
 			var _scaled:BitmapData = new BitmapData(Math.ceil(width * 0.75), Math.ceil(height * 0.5), true, 0 );
 			var m:Matrix = new Matrix(0.5,0,0,0.5);
@@ -72,11 +81,9 @@ package net.psykosoft.psykopaint2.tdsi
 			
 			_offsets = new Vector.<int>();
 			var offset:int = 0;
-			if ( scaleFactor == 1 )
-			{
-				offset +=  width*height*4;
-				_offsets.push( offset);
-			}
+			offset +=  width*height*4;
+			_offsets.push( offset);
+			
 			for ( var i:int = 0; i < 6; i++ )
 			{
 				offset += rect.width * rect.height * 4; 
@@ -104,7 +111,7 @@ package net.psykosoft.psykopaint2.tdsi
 			_data = MemoryManagerTdsi.memory;
 			
 			_data.position = _baseOffset;
-			if ( scaleFactor == 1 ) _data.writeBytes(  map.getPixels(map.rect) );
+			_data.writeBytes(  map.getPixels(map.rect) );
 			
 			for ( i = 0; i < r.length; i++ )
 			{
@@ -124,7 +131,7 @@ package net.psykosoft.psykopaint2.tdsi
 			*/
 			
 			_scaled.dispose();
-			
+			if ( scaleFactor != 1 ) map.dispose();
 		}
 		
 		public function getRGB( x:Number, y:Number, radius:Number, target:Vector.<Number> ):void
